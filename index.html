@@ -632,27 +632,29 @@ async function sendMessage() {
   input.value = '';
   addUserMessage(text);
 
-  conversationHistory.push({ role: 'user', content: text });
+  conversationHistory.push({ role: 'user', parts: [{ text }] });
 
   isTyping = true;
   showTyping();
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: buildSystemPrompt(),
-        messages: conversationHistory,
-      })
-    });
+    const apiKey = 'AIzaSyBbzXRJ59kvE7SUlHslde9msTrI4CH1TnU';
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: buildSystemPrompt() }] },
+          contents: conversationHistory,
+        })
+      }
+    );
 
     const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Sorry, er ging iets mis. Probeer het opnieuw.';
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, er ging iets mis. Probeer het opnieuw.';
 
-    conversationHistory.push({ role: 'assistant', content: reply });
+    conversationHistory.push({ role: 'model', parts: [{ text: reply }] });
 
     hideTyping();
     addBotMessage(reply.replace(/\n/g, '<br>'));
